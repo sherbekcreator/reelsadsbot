@@ -13,8 +13,8 @@ from database import engine, Base, AsyncSessionLocal, User, Transaction
 # --- SOZLAMALAR ---
 BOT_TOKEN = "8252237845:AAFUpoc-GaH7QZmRbq0CNesvB879YvHe-AM"
 
-# DIQQAT: Agar tunnel o'chib qolgan bo'lsa, shu yerdagi havolani yangisiga almashtirasiz.
-MINI_APP_URL = "https://ae2b2c1b489c8b.lhr.life/?v=5" 
+# DIQQAT: Manzil to'g'ridan-to'g'ri haqiqiy serverga o'zgartirildi
+MINI_APP_URL = "https://reelsadsbot.onrender.com" 
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -75,14 +75,14 @@ async def cmd_start(message: types.Message, command: CommandObject):
     bot_info = await bot.get_me()
     invite_link = f"https://t.me/{bot_info.username}?start={tg_id}"
             
-    # Xush kelibsiz xabari (Endi taklif havolasi bilan)
+    # Xush kelibsiz xabari (Aynan siz so'ragan formatda)
     text = (
         f"👋 Salom, {full_name}!\n\n"
         "ReelAds platformasiga xush kelibsiz!\n"
         "• Reels tomosha qiling va koin to'plang.\n"
         "• 10,000 Koin = $1.00\n"
         "• Minimal yechish: $5 (50,000 koin)\n\n"
-        f"🔗 **Sizning shaxsiy taklif havolangiz:**\n`{invite_link}`\n"
+        f"🔗 Sizning shaxsiy taklif havolangiz:\n{invite_link}\n"
         "(Har bir do'stingiz uchun 50,000 koin oling!)\n\n"
         "Boshlash uchun pastdagi tugmani bosing 👇"
     )
@@ -95,7 +95,7 @@ async def cmd_start(message: types.Message, command: CommandObject):
         ]
     )
     
-    await message.answer(text, reply_markup=markup, parse_mode="Markdown")
+    await message.answer(text, reply_markup=markup)
 
 # --- FASTAPI: API VA LIFESPAN (Yashash sikli) ---
 @asynccontextmanager
@@ -152,25 +152,19 @@ async def add_reward(request: Request):
         await session.commit()
         return {"status": "success", "new_balance": user.balance}
 
-# ==============================================================
-# YANGI QO'SHILGAN QISM: ADSGRAM WEBHOOK (Reklama ko'rilganda)
-# ==============================================================
 @app.get("/api/reward/ad")
 async def adsgram_webhook(user_id: int):
     async with AsyncSessionLocal() as session:
-        # 1. Foydalanuvchini bazadan qidiramiz
         result = await session.execute(select(User).where(User.tg_id == user_id))
         user = result.scalars().first()
         
         if not user:
             raise HTTPException(status_code=404, detail="Foydalanuvchi topilmadi")
 
-        # 2. Balansga 20 koin qo'shamiz
         reward_amount = 20
         user.balance += reward_amount
         user.total_earned += reward_amount
 
-        # 3. Tranzaksiyani tarixga yozamiz
         new_tx = Transaction(
             user_id=user.id,
             tx_type="video_ad",
@@ -181,5 +175,4 @@ async def adsgram_webhook(user_id: int):
         session.add(new_tx)
         await session.commit()
 
-        # Adsgram'ga "hammasi joyida" deb javob qaytaramiz
         return {"status": "success", "message": f"{reward_amount} koin qo'shildi"}
