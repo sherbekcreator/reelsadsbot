@@ -3,11 +3,10 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from sqlalchemy import Column, Integer, String, BigInteger, Boolean, DateTime, ForeignKey
 from datetime import datetime
 
-# HECH QANDAY SAYT YOKI PAROL KERAK EMAS!
-# Dastur o'zi kodlaringiz yonida "reelsads.db" degan fayl ochib oladi.
-DATABASE_URL = "sqlite+aiosqlite:///reelsads.db"
+# Neon.tech PostgreSQL bazasi (Render va bulutli server uchun)
+DATABASE_URL = "postgresql+asyncpg://neondb_owner:npg_8psr9IgPXNAE@ep-lucky-cloud-b46lv94e-pooler.c-6.us-east-2.aws.neon.tech/neondb"
 
-# SQLite uchun xos sozlama
+# PostgreSQL uchun asinxron ulanish sozlamasi
 engine = create_async_engine(DATABASE_URL, echo=False)
 AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 Base = declarative_base()
