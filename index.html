@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ReelAds - Pul ishlash</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+    
+    <style>
+        body { 
+            background-color: #0f172a; 
+            color: white; 
+            font-family: sans-serif; 
+            overflow-x: hidden; 
+        }
+        
+        /* Tanga uchish animatsiyasi */
+        .coin-anim {
+            position: absolute; 
+            animation: flyUp 1s ease-out forwards;
+            font-size: 24px; 
+            pointer-events: none;
+        }
+        
+        @keyframes flyUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-100px) scale(1.5); }
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen p-4 pb-20">
+
+    <div class="flex justify-between items-center bg-slate-800 p-4 rounded-2xl shadow-lg mb-4">
+        <div class="flex items-center gap-3">
+            <div id="userPhoto" class="w-12 h-12 bg-slate-600 rounded-full flex items-center justify-center text-xl font-bold">
+                👤
+            </div>
+            <div>
+                <p id="userName" class="text-sm text-gray-400">Yuklanmoqda...</p>
+                <p class="font-bold text-lg"><span id="userBalance">0</span> 🪙</p>
+            </div>
+        </div>
+        <div class="text-right">
+            <p class="text-xs text-gray-400">Umumiy ishlangan</p>
+            <p class="font-semibold text-green-400"><span id="totalEarned">0</span> 🪙</p>
+        </div>
+    </div>
+
+    <div class="bg-slate-800 w-full p-5 rounded-2xl text-center shadow-xl border border-slate-700 mb-4">
+        <h2 class="text-xl font-bold mb-2">▶️ Tezkor Video (Adsgram)</h2>
+        <p class="text-gray-400 text-xs mb-4">Qisqa videoni ko'ring va darhol koin oling</p>
+        
+        <button id="watchAdBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl shadow-[0_0_10px_rgba(37,99,235,0.5)] transition-all">
+            Ko'rish (+20 🪙)
+        </button>
+        <p id="adStatus" class="text-xs text-yellow-400 mt-2 h-4"></p>
+    </div>
+
+    <div class="bg-slate-800 w-full p-5 rounded-2xl text-center shadow-xl border border-slate-700 mb-4">
+        <h2 class="text-xl font-bold mb-2">💰 Katta Vazifalar (Offerwall)</h2>
+        <p class="text-gray-400 text-xs mb-4">O'yin o'rnating yoki so'rovnoma to'ldiring</p>
+        
+        <button class="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-4 rounded-xl mb-3 flex justify-between items-center opacity-80" onclick="alert('Tez kunda Torox ulanadi!')">
+            <span>🎮 O'yinlar (Torox)</span>
+            <span class="text-yellow-300">+50,000 🪙</span>
+        </button>
+        
+        <button class="w-full bg-teal-600 hover:bg-teal-500 text-white font-bold py-3 px-4 rounded-xl flex justify-between items-center opacity-80" onclick="alert('Tez kunda CPALead ulanadi!')">
+            <span>📋 So'rovnoma (CPALead)</span>
+            <span class="text-yellow-300">+15,000 🪙</span>
+        </button>
+    </div>
+
+    <div class="bg-slate-800 w-full p-4 rounded-2xl text-center border border-slate-700 flex justify-between items-center">
+        <div class="text-left">
+            <h2 class="font-bold text-sm">🌐 Saytga tashrif (Adsterra)</h2>
+            <p class="text-xs text-gray-400">Homiy saytiga o'ting</p>
+        </div>
+        <button class="bg-green-600 text-white text-sm font-bold py-2 px-4 rounded-lg" onclick="alert('Tez kunda Direct Link ulanadi!')">
+            Bajarish
+        </button>
+    </div>
+
+    <script>
+        // 1. Telegram obyektini ishga tushirish
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        
+        // 2. Boshlang'ich o'zgaruvchilar
+        let tgId = 123456789; // Test uchun
+        let tgName = "Test User"; // Test uchun
+        
+        // API manzilini joriy domendan avtomatik olish
+        const API_URL = window.location.origin + "/api"; 
+
+        // 3. Telegramdan foydalanuvchi ma'lumotlarini o'qish
+        if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+            tgId = tg.initDataUnsafe.user.id;
+            tgName = tg.initDataUnsafe.user.first_name;
+            
+            // Ekranga ismni chiqarish
+            document.getElementById("userName").innerText = tgName;
+            document.getElementById("userPhoto").innerText = tgName.charAt(0);
+        }
+
+        // 4. Balansni serverdan yuklash funksiyasi
+        async function loadUserData() {
+            try {
+                let response = await fetch(`${API_URL}/user/${tgId}`);
+                
+                if (response.ok) {
+                    let data = await response.json();
+                    
+                    // HTML dagi raqamlarni yangilash
+                    document.getElementById("userBalance").innerText = data.balance;
+                    document.getElementById("totalEarned").innerText = data.total_earned;
+                }
+            } catch (error) { 
+                console.error("Balans yuklashda xato:", error); 
+            }
+        }
+
+        // 5. Adsgram blokini ulash (Haqiqiy ID ulangan holatda)
+        const AdController = window.Adsgram.init({ blockId: "48261" }); 
+        
+        const watchBtn = document.getElementById("watchAdBtn");
+        const statusText = document.getElementById("adStatus");
+
+        // 6. Reklama ko'rish tugmasi bosilganda
+        watchBtn.addEventListener("click", () => {
+            
+            // Tugmani o'chirish va holatni o'zgartirish
+            statusText.innerText = "Yuklanmoqda...";
+            watchBtn.disabled = true;
+            
+            // Reklamani ko'rsatish
+            AdController.show().then(async () => {
+                // Reklama muvaffaqiyatli ko'rildi
+                statusText.innerText = "+20 Koin qo'shildi! 🎉";
+                statusText.classList.replace("text-yellow-400", "text-green-400");
+                
+                showCoinAnimation();
+                
+                // Serverga koin qo'shish so'rovini yuborish
+                await fetch(`${API_URL}/reward`, {
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ 
+                        tg_id: tgId, 
+                        amount: 20, 
+                        tx_type: "adsgram_video" 
+                    })
+                });
+                
+                // Balansni qayta yuklash
+                loadUserData();
+                
+            }).catch(() => {
+                // Foydalanuvchi videoni yopib qo'ydi yoki xato
+                statusText.innerText = "Reklama bekor qilindi.";
+                statusText.classList.replace("text-green-400", "text-red-400");
+                
+            }).finally(() => {
+                // 3 soniyadan keyin tugmani asl holiga qaytarish
+                setTimeout(() => { 
+                    watchBtn.disabled = false; 
+                    statusText.innerText = ""; 
+                    statusText.classList.replace("text-red-400", "text-yellow-400");
+                }, 3000);
+            });
+        });
+
+        // 7. Ekranda tanga uchish animatsiyasini yaratish
+        function showCoinAnimation() {
+            const coin = document.createElement("div");
+            coin.innerText = "🪙";
+            coin.className = "coin-anim";
+            
+            // Ekranning o'rtasidan chiqishi uchun
+            coin.style.left = "50%"; 
+            coin.style.top = "50%";
+            
+            document.body.appendChild(coin);
+            
+            // 1 soniyadan so'ng elementni o'chirib tashlash
+            setTimeout(() => coin.remove(), 1000);
+        }
+
+        // 8. Dastur yonganda birinchi marta balansni yuklash
+        loadUserData();
+    </script>
+</body>
+</html>
