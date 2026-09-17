@@ -90,8 +90,8 @@
         tg.expand();
         
         // 2. Boshlang'ich o'zgaruvchilar
-        let tgId = 123456789; // Test uchun
-        let tgName = "Test User"; // Test uchun
+        let tgId = 123456789; 
+        let tgName = "Foydalanuvchi"; 
         
         // API manzilini joriy domendan avtomatik olish
         const API_URL = window.location.origin + "/api"; 
@@ -101,20 +101,16 @@
             tgId = tg.initDataUnsafe.user.id;
             tgName = tg.initDataUnsafe.user.first_name;
             
-            // Ekranga ismni chiqarish
             document.getElementById("userName").innerText = tgName;
             document.getElementById("userPhoto").innerText = tgName.charAt(0);
         }
 
-        // 4. Balansni serverdan yuklash funksiyasi
+        // 4. Balansni serverdan yuklash
         async function loadUserData() {
             try {
                 let response = await fetch(`${API_URL}/user/${tgId}`);
-                
                 if (response.ok) {
                     let data = await response.json();
-                    
-                    // HTML dagi raqamlarni yangilash
                     document.getElementById("userBalance").innerText = data.balance;
                     document.getElementById("totalEarned").innerText = data.total_earned;
                 }
@@ -123,48 +119,39 @@
             }
         }
 
-        // 5. Adsgram blokini ulash (Haqiqiy ID ulangan holatda)
-        const AdController = window.Adsgram.init({ blockId: "48261" }); 
+        // 5. Adsgram blokini ulash (48260 qilib to'g'rilandi!)
+        const AdController = window.Adsgram.init({ blockId: "48260" }); 
         
         const watchBtn = document.getElementById("watchAdBtn");
         const statusText = document.getElementById("adStatus");
 
         // 6. Reklama ko'rish tugmasi bosilganda
         watchBtn.addEventListener("click", () => {
-            
-            // Tugmani o'chirish va holatni o'zgartirish
             statusText.innerText = "Yuklanmoqda...";
             watchBtn.disabled = true;
             
-            // Reklamani ko'rsatish
             AdController.show().then(async () => {
                 // Reklama muvaffaqiyatli ko'rildi
                 statusText.innerText = "+20 Koin qo'shildi! 🎉";
                 statusText.classList.replace("text-yellow-400", "text-green-400");
-                
                 showCoinAnimation();
                 
-                // Serverga koin qo'shish so'rovini yuborish
-                await fetch(`${API_URL}/reward`, {
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ 
-                        tg_id: tgId, 
-                        amount: 20, 
-                        tx_type: "adsgram_video" 
-                    })
-                });
+                // DIQQAT: Biz `fetch` orqali koin qo'shishni o'chirib tashladik.
+                // Sababi, koinni Adsgram'ning o'zi orqa fonda webhook (main.py) orqali qo'shadi.
+                // Xakerlar oldini olish uchun faqat balansni qayta yuklaymiz.
                 
-                // Balansni qayta yuklash
-                loadUserData();
+                // Server bazaga yozib ulgurishi uchun 2 soniya kutib, keyin balansni tortamiz
+                setTimeout(() => {
+                    loadUserData();
+                }, 2000);
                 
-            }).catch(() => {
+            }).catch((result) => {
                 // Foydalanuvchi videoni yopib qo'ydi yoki xato
                 statusText.innerText = "Reklama bekor qilindi.";
                 statusText.classList.replace("text-green-400", "text-red-400");
-                
+                console.log("Adsgram bekor qildi:", result);
             }).finally(() => {
-                // 3 soniyadan keyin tugmani asl holiga qaytarish
+                // Tugmani asl holiga qaytarish
                 setTimeout(() => { 
                     watchBtn.disabled = false; 
                     statusText.innerText = ""; 
@@ -178,14 +165,9 @@
             const coin = document.createElement("div");
             coin.innerText = "🪙";
             coin.className = "coin-anim";
-            
-            // Ekranning o'rtasidan chiqishi uchun
             coin.style.left = "50%"; 
             coin.style.top = "50%";
-            
             document.body.appendChild(coin);
-            
-            // 1 soniyadan so'ng elementni o'chirib tashlash
             setTimeout(() => coin.remove(), 1000);
         }
 
